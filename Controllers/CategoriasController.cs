@@ -10,7 +10,7 @@ using APICatalogo.Models;
 
 namespace APICatalogo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class CategoriasController : ControllerBase
     {
@@ -21,15 +21,22 @@ namespace APICatalogo.Controllers
             _context = context;
         }
 
-        // GET: api/Categorias
+
+        [HttpGet("produtos")]
+        public async Task<ActionResult<IEnumerable<Categoria>>> GetCategoriasProdutos()
+        {
+            return await _context.Categorias.Include(p=> p.Produtos).ToListAsync();
+        }
+
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Categoria>>> GetCategorias()
         {
             return await _context.Categorias.ToListAsync();
         }
 
-        // GET: api/Categorias/5
-        [HttpGet("{id}")]
+        
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<Categoria>> GetCategoria(int id)
         {
             var categoria = await _context.Categorias.FindAsync(id);
@@ -42,9 +49,23 @@ namespace APICatalogo.Controllers
             return categoria;
         }
 
-        // PUT: api/Categorias/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
+       
+        [HttpPost]
+        public async Task<ActionResult<Categoria>> PostCategoria(Categoria categoria)
+        {
+           if (categoria == null)
+            {
+                return BadRequest();
+            }
+            
+            _context.Categorias.Add(categoria);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetCategoria", new { id = categoria.CategoriaId }, categoria);
+        }
+
+
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> PutCategoria(int id, Categoria categoria)
         {
             if (id != categoria.CategoriaId)
@@ -70,22 +91,12 @@ namespace APICatalogo.Controllers
                 }
             }
 
-            return NoContent();
+            return Ok(categoria);
         }
 
-        // POST: api/Categorias
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Categoria>> PostCategoria(Categoria categoria)
-        {
-            _context.Categorias.Add(categoria);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetCategoria", new { id = categoria.CategoriaId }, categoria);
-        }
-
-        // DELETE: api/Categorias/5
-        [HttpDelete("{id}")]
+        
+              
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteCategoria(int id)
         {
             var categoria = await _context.Categorias.FindAsync(id);

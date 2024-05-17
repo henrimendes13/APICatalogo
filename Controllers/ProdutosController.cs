@@ -34,12 +34,12 @@ namespace APICatalogo.Controllers
         }
 
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int:min(1)}")]
         public async Task<ActionResult<Produto>> GetProduto(int id)
         {
             var produto = await _context.Produtos.FindAsync(id);
 
-            if (produto == null)
+            if (produto == null) 
             {
                 return NotFound("Produto não encontrado.");
             }
@@ -53,6 +53,9 @@ namespace APICatalogo.Controllers
         {
             if (produto is null)
                 return BadRequest();
+
+            if (produto.ProdutoId == 0)
+                return BadRequest("O ID não pode ser 0.");
 
             _context.Produtos.Add(produto);
             await _context.SaveChangesAsync();
