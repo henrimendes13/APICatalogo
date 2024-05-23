@@ -7,113 +7,110 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using APICatalogo.Data;
 using APICatalogo.Models;
+using APICatalogo.Services;
+using APICatalogo.DTOs;
 
-namespace APICatalogo.Controllers
+namespace APICatalogo.Controllers;
+
+[Route("[controller]")]
+[ApiController]
+public class CategoriasController : ControllerBase
 {
-    [Route("[controller]")]
-    [ApiController]
-    public class CategoriasController : ControllerBase
+    private readonly ICategoriaService _categoriaService;
+
+    public CategoriasController(ICategoriaService categoriaService)
     {
-        private readonly APIDbContext _context;
-
-        public CategoriasController(APIDbContext context)
-        {
-            _context = context;
-        }
-
-
-        [HttpGet("produtos")]
-        public async Task<ActionResult<IEnumerable<Categoria>>> GetCategoriasProdutos()
-        {
-            return await _context.Categorias.Include(p=> p.Produtos).ToListAsync();
-        }
-
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Categoria>>> GetCategorias()
-        {
-            return await _context.Categorias.ToListAsync();
-        }
-
-        
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<Categoria>> GetCategoria(int id)
-        {
-            var categoria = await _context.Categorias.FindAsync(id);
-
-            if (categoria == null)
-            {
-                return NotFound();
-            }
-
-            return categoria;
-        }
-
-       
-        [HttpPost]
-        public async Task<ActionResult<Categoria>> PostCategoria(Categoria categoria)
-        {
-           if (categoria == null)
-            {
-                return BadRequest();
-            }
-            
-            _context.Categorias.Add(categoria);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetCategoria", new { id = categoria.CategoriaId }, categoria);
-        }
-
-
-        [HttpPut("{id:int}")]
-        public async Task<IActionResult> PutCategoria(int id, Categoria categoria)
-        {
-            if (id != categoria.CategoriaId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(categoria).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CategoriaExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return Ok(categoria);
-        }
-
-        
-              
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteCategoria(int id)
-        {
-            var categoria = await _context.Categorias.FindAsync(id);
-            if (categoria == null)
-            {
-                return NotFound();
-            }
-
-            _context.Categorias.Remove(categoria);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool CategoriaExists(int id)
-        {
-            return _context.Categorias.Any(e => e.CategoriaId == id);
-        }
+        _categoriaService = categoriaService;
     }
+
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<CategoriaDTO>>> GetCategorias()
+    {
+        var categoriasDto = await _categoriaService.GetCategorias();
+        if (categoriasDto == null)
+        {
+            return NotFound("Categorias Not Found");
+        }
+
+        return Ok(categoriasDto);
+    }
+
+
+    [HttpGet("produtos")]
+    public async Task<ActionResult<IEnumerable<CategoriaDTO>>> GetCategoriasProdutos()
+    {
+        var categoriasDto = await _categoriaService.GetCategoriasProdutos();
+        if (categoriasDto == null)
+        {
+            return NotFound("Categorias Not Found");
+        }
+
+        return Ok(categoriasDto);
+    }
+
+
+
+    [HttpGet("{id:int}", Name = "GetCategoria")]
+    public async Task<ActionResult<CategoriaDTO>> GetCategoria(int id)
+    {
+        var categoriaDto = await _categoriaService.GetCategoriaById(id);
+
+        if (categoriaDto == null)
+        {
+            return NotFound("Categoria Not Found");
+        }
+
+        return categoriaDto;
+    }
+
+
+    [HttpPost]
+    public async Task<ActionResult> PostCategoria([FromBody] CategoriaDTO categoriaDto)
+    {
+        if (categoriaDto == null)
+        {
+            return BadRequest("Dados Invalidos");
+        }
+
+        await _categoriaService.AddCategoria(categoriaDto);
+
+        return new CreatedAtRouteResult("GetCategoria", new { id = categoriaDto.CategoriaId }, categoriaDto);
+    }
+
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> PutCategoria(int id, [FromBody] CategoriaDTO categoriaDto)
+    {
+        if (id != categoriaDto.CategoriaId)
+        {
+            return BadRequest();
+        }
+
+        if (categoriaDto == null)
+        {
+            return BadRequest();
+        }
+
+        await _categoriaService.UpdateCategoria(categoriaDto);
+
+        return Ok(categoriaDto);
+    }
+
+
+
+    [HttpDelete("{id:int}")]
+    public async Task<ActionResult<CategoriaDTO>> DeleteCategoria(int id)
+    {
+        var categoriaDto = await _categoriaService.GetCategoriaById(id);
+        if (categoriaDto == null)
+        {
+            return NotFound("Categoria Not Found");
+        }
+
+        await _categoriaService.RemoveCategoria(id);
+
+        return Ok(categoriaDto);
+    }
+
 }
